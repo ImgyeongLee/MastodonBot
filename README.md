@@ -1,12 +1,13 @@
 # MastodonBot
 
 A general mastodon bot python template cooperating with Google Spreadsheet.
+
 구글 스프레드시트와 연동할 수 있는, 마스토돈 봇 파이썬 템플렛입니다.
 
 ## 자료
 
-[샘플 스프레드시트](https://docs.google.com/spreadsheets/d/1uQ5la1Z2OP1dTgUuUXyJjLEagznXyEWJ-GheA0u-Nc4/edit?usp=sharing)
-[구글 API 취득 방법](https://liwonfather.tistory.com/235)
+-  [샘플 스프레드시트](https://docs.google.com/spreadsheets/d/1uQ5la1Z2OP1dTgUuUXyJjLEagznXyEWJ-GheA0u-Nc4/edit?usp=sharing)
+-  [구글 API 취득 방법](https://liwonfather.tistory.com/235)
 
 ## 제공되는 기능들
 
@@ -52,3 +53,10 @@ mingbab33@gmail.com
 -  문의 및 질문.
 -  오류 및 버그 제보.
 -  새로운 기능 추가 요구 가능.
+-  기타 피드백.
+
+## Considering...
+
+-  캐릭터 정보 관리
+-  조사 기능 개선 (피드백 요함)
+-  코드 리팩토링
