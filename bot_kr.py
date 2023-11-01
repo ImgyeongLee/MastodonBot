@@ -109,20 +109,25 @@ def trueOrFalse():
 # 가챠
 # @param    n:number - 가챠 횟수
 # @return   list
+# API Request   1회 Google Spreadsheet API 3회
 def gatcha(n):
     if n > 10:
         return "한 번에 최대 10번만 연속으로 뽑을 수 있어요!"
 
     inventory = []
+    super_rare_items = gatcha_items.col_values(GATCHA_SUPER_RARE)
+    rare_items = gatcha_items.col_values(GATCHA_RARE)
+    normal_items = gatcha_items.col_values(GATCHA_NORMAL)
+    
     for _ in range(n):
         quality = gatcha_helper()
 
         if quality == "SUPER_RARE":
-            col_data = gatcha_items.col_values(GATCHA_SUPER_RARE)
+            col_data = super_rare_items
         elif quality == "RARE":
-            col_data = gatcha_items.col_values(GATCHA_RARE)
+            col_data = rare_items
         else:
-            col_data = gatcha_items.col_values(GATCHA_NORMAL)
+            col_data = normal_items
 
         items = col_data[1:]
         item_list = list(map(str, items))
@@ -152,6 +157,7 @@ def gatcha_helper():
 # 출석을 확인하는 함수
 # @param    account:string
 # @return   string
+# API Request   1회 Google Spreadsheet API 5회
 def checkAttendance(account):
     # 계정을 스프레드시트에서 찾음
     finder = attendance.find(account, in_column=ATTENDANCE_ACCOUNT, case_sensitive=True)
@@ -160,7 +166,11 @@ def checkAttendance(account):
     # 만약 계정이 시트에 있을 경우, 출석을 체크하고 캐릭터의 이름을 반환함
     if account_row:
         current_datetime = datetime.now().strftime('%Y-%m-%d')
-        count = int(attendance.cell(account_row, ATTENDANCE_COUNT).value)
+        attendance_count = attendance.cell(account_row, ATTENDANCE_COUNT).value
+        if attendance_count:
+            count = int(attendance_count)
+        else:
+            count = 0
         attendance.update_cell(account_row, ATTENDANCE_COUNT, count + 1)
         attendance.update_cell(account_row, ATTENDANCE_DATE, current_datetime)
         character_name = attendance.cell(account_row, ATTENDANCE_NAME).value
@@ -173,6 +183,7 @@ def checkAttendance(account):
 # 키워드로만 이루어지는 조사
 # @param    keyword:string
 # @return   string
+# API Request   1회 Google Spreadsheet API 2회
 def investigate(keyword):
     # 키워드가 있는지 확인
     finder = search.find(keyword, in_column=SEARCH_KEYWORD, case_sensitive=True)
@@ -190,6 +201,7 @@ def investigate(keyword):
 # @param    account:string
 # @param    item:string
 # @return   string
+# API Request   1회 Google Spreadsheet API 6회
 def buySomething(account, item):
     store_finder = store.find(item, in_column=STORE_ITEM, case_sensitive=True)
     if store_finder:
