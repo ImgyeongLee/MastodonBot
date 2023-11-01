@@ -4,6 +4,19 @@ A general mastodon bot python template cooperating with Google Spreadsheet.
 
 구글 스프레드시트와 연동할 수 있는, 마스토돈 봇 파이썬 템플렛입니다.
 
+## 마이너 업데이트 (2023-10-31, PST)
+
+-  코드 리팩토링: status_post 대신 status_reply 함수를 확인하여 코드를 조금 더 간결화 함
+-  불필요한 API 요청 제거: API 요청 제한에 걸리지 않기 위해 일부 코드를 수정함. 더 괜찮은 방법을 고민해보는 중.
+-  불필요한 코드 라인 제거
+-  각 함수에 일부 코멘트 추가 (예: 1회 어떤 API가 몇 회 요청되는지)
+
+## Considering...
+
+-  현재 일부 예외 케이스를 발견하였습니다. (NonType 문제) 시간이 나는대로 수정하겠습니다.
+-  조사 기능에 관하여: 마스토돈 API의 제한은 5분당 300회 요청이라고 합니다. API 요청을 최소화하는 방법으로 구상을 해보겠습니다만, 현재로서는 해당 봇은 조사가 주로 되는 커뮤니티에는 적합하지 않을 수도 있습니다.
+-  전투 기능에 관하여: Workflow를 고안하고 있는 중입니다. 턴제 특성상 API 제한에 걸리지 않을 것 같습니다. 한 번 구상해보겠습니다.
+
 ## 자료
 
 -  [샘플 스프레드시트](https://docs.google.com/spreadsheets/d/1uQ5la1Z2OP1dTgUuUXyJjLEagznXyEWJ-GheA0u-Nc4/edit?usp=sharing)
@@ -54,9 +67,3 @@ mingbab33@gmail.com
 -  오류 및 버그 제보.
 -  새로운 기능 추가 요구 가능.
 -  기타 피드백.
-
-## Considering...
-
--  캐릭터 정보 관리
--  조사 기능 개선 (피드백 요함)
--  코드 리팩토링

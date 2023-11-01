@@ -8,6 +8,10 @@ import re
 import random
 import gspread
 
+# 주의사항
+# 마스토돈 API 사용 제한: 5분/300회
+# 구글스프레드 API 사용 제한: 1분/300회
+
 
 # 봇 세팅
 # api_base_url의 경우, 마스토돈 서버마다 다르게 설정해주어야 함.
@@ -22,10 +26,10 @@ mastodon = Mastodon(
 # 구글 스프레드시트 세팅
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/spreadsheets",
-         "https://www.googleapis.com/auth/drive.file",
-         "https://www.googleapis.com/auth/drive"]
+         ]
 
 # 비공개 키 (Credential key) 파일 이름 (.json)
+# 해당 파일은 본 파일과 같은 폴더 안에 있어야 함.
 json = "비공개키파일이름.json"
 
 credentials = ServiceAccountCredentials.from_json_keyfile_name(json, scope)
@@ -239,13 +243,14 @@ class Listener(StreamListener):
 
                 user_text = user_text[cmdStart:cmdEnd]
 
+
                 # 가챠
                 # 키워드 형식: [조사/키워드]
                 if "조사" in user_text and '/' in user_text:
                     keyword_start = user_text.find("/") + 1
                     keyword = user_text[keyword_start:]
                     result = investigate(keyword)
-                    mastodon.status_post(f"@{notification['status']['account']['acct']} " + result, in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
                 # 가챠
                 # 키워드 형식: [가챠/n]
@@ -253,7 +258,7 @@ class Listener(StreamListener):
                     round_start = user_text.find("/") + 1
                     round = int(user_text[round_start:])
                     result = gatcha(round)
-                    mastodon.status_post(f"@{notification['status']['account']['acct']} " + result, in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
                 # 상점
                 # 키워드 형식: [구매/아이템 이름]
@@ -262,7 +267,7 @@ class Listener(StreamListener):
                     item_start = user_text.find("/") + 1
                     item = user_text[item_start:]
                     result = buySomething(user_account, item)
-                    mastodon.status_post(f"@{notification['status']['account']['acct']} " + result, in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
                 # 출석
                 # 키워드 형식: [출석]
@@ -270,9 +275,9 @@ class Listener(StreamListener):
                     user_account = notification['status']['account']["username"]
                     user_name = checkAttendance(user_account)
                     if user_name != 'X':
-                        mastodon.status_post(f"@{notification['status']['account']['acct']} {user_name}님, 어서오세요. 오늘 출석하셨네요!", in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                        mastodon.status_reply(notification['status'], f"{user_name}님, 어서오세요. 오늘 출석하셨네요!", visibility='unlisted')
                     else:
-                        mastodon.status_post(f"@{notification['status']['account']['acct']} 존재하지 않는 이름이에요!", in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                        mastodon.status_reply(notification['status'], "존재하지 않는 이름이에요!", visibility='unlisted')
 
                 # 다이스
                 # 키워드 형식: [ndm] 혹은 [nDm]
@@ -287,17 +292,19 @@ class Listener(StreamListener):
                     m = int(user_text[nMid + 1:].strip())
 
                     result = dice(n, m)
-                    mastodon.status_post(f"@{notification['status']['account']['acct']} {result}", in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
+
 
                 # 참/거짓
                 # 키워드 형식: [T/F]
                 elif "T" in user_text and "F" in user_text and '/' in user_text:
                     result = trueOrFalse()
-                    mastodon.status_post(f"@{notification['status']['account']['acct']} {result}", in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
             else:
-                mastodon.status_post(f"@{notification['status']['account']['acct']} 키워드 형식이 올바르지 않은 것 같아요.", in_reply_to_id=notification['status']['id'], visibility='unlisted')
+                mastodon.status_reply(notification['status'], "키워드 형식이 올바르지 않은 것 같아요.", visibility='unlisted')
                 print("형식이 올바르지 아니함")
+
 
     def handle_heartbeat(self):
         return super().handle_heartbeat()
