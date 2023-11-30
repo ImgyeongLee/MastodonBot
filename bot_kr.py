@@ -2,11 +2,16 @@
 from mastodon import Mastodon
 from mastodon.streaming import StreamListener
 from oauth2client.service_account import ServiceAccountCredentials
+from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from datetime import datetime
+import os
 import re
 import random
 import gspread
+
+# 환경변수를 불러옴
+load_dotenv()
 
 # 주의사항
 # 마스토돈 API 사용 제한: 5분/300회
@@ -17,10 +22,10 @@ import gspread
 # api_base_url의 경우, 마스토돈 서버마다 다르게 설정해주어야 함.
 # 본인은 일단 기본적으로 플래닛 서버를 쓰기에 플래닛으로 설정함.
 mastodon = Mastodon(
-        client_id="클라이언트 키를 복사 붙여넣기 하세요.",
-        client_secret="클라이언트 비밀 키를 복사 붙여넣기 하세요.",
-        access_token="액세스 토큰을 복사 붙여넣기 하세요",
-        api_base_url="https://planet.moe"
+        client_id=os.getenv("CLIENT_ID"),
+        client_secret=os.getenv("CLIENT_SECRET"),
+        access_token=os.getenv("ACCESS_TOKEN"),
+        api_base_url=os.getenv("API_BASE_URL")
         )
 
 # 구글 스프레드시트 세팅
@@ -30,7 +35,7 @@ scope = ["https://spreadsheets.google.com/feeds",
 
 # 비공개 키 (Credential key) 파일 이름 (.json)
 # 해당 파일은 본 파일과 같은 폴더 안에 있어야 함.
-json = "비공개키파일이름.json"
+json = os.getenv("CRENDENTIAL_JSON")
 
 credentials = ServiceAccountCredentials.from_json_keyfile_name(json, scope)
 
@@ -38,7 +43,7 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name(json, scope)
 gc = gspread.authorize(credentials)
 
 # 스프레드시트 열기 (스프레드시트 URL)
-sh = gc.open_by_url("당신의 구글스프레드시트URL")
+sh = gc.open_by_url(os.getenv("GOOGLE_SHEET_URL"))
 
 # 워크시트 선택
 search = sh.worksheet("조사")
@@ -89,10 +94,10 @@ def filterText(rawText):
 # 다이스, nDm을 굴림
 # @param    n:number
 # @param    m:number
-# @return   int
+# @return   string
 def dice(n, m):
     random_number = sum(random.randint(0, m) for _ in range(n))
-    return random_number
+    return str(random_number)
 
 
 # 참 거짓
