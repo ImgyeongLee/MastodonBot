@@ -77,6 +77,8 @@ CHARACTER_ACCOUNT = 1
 CHARACTER_NAME = 2
 CHARACTER_MONEY = 3
 
+
+
 # [/]빼고 전부 제거하는 정규 표현식
 CLEANER = re.compile('[^\w\s\[\]/]')
 
@@ -209,6 +211,7 @@ def investigate(keyword):
 # API Request   1회 Google Spreadsheet API 6회
 def buySomething(account, item):
     store_finder = store.find(item, in_column=STORE_ITEM, case_sensitive=True)
+	
     if store_finder:
         item_row = store_finder.row
     else:
@@ -219,7 +222,13 @@ def buySomething(account, item):
         account_row = character_finder.row
     else:
         return '존재하지 않는 유저입니다.'
-
+	user_row = sheet.row_values(account)
+	empty_cells = []
+    for col_index, cell in enumerate(row, start=1):
+        if not cell:  # 빈 셀인 경우
+            empty_cells = col_index
+			break
+			
     if item_row:
         price = int(store.cell(item_row, STORE_PRICE).value)
         money = int(character.cell(account_row, CHARACTER_MONEY).value)
@@ -227,6 +236,7 @@ def buySomething(account, item):
             budget = money - price
             character.update_cell(account_row, CHARACTER_MONEY, budget)
             user_name = character.cell(account_row, CHARACTER_NAME).value
+			character.update_cell(account_row, empty_sells, item)
             return f'{user_name}님, 성공적으로 {item}을 구매했어요! (잔액: {budget})'
         else:
             return '이런, 재화가 부족하네요!'
@@ -318,6 +328,39 @@ class Listener(StreamListener):
                     result = trueOrFalse()
                     mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
+                # 인벤토리
+                # 키워드 형식 [양도/양도대상/아이템]
+                elif "양도" in user_text and '/' in user_text:
+            		give_account, take_account, item = split(user_text, "/")
+					give_account = notification['status']['account']["username"]
+					user_row = sheet.row_values(give_account)
+
+					# 가진쪽 아이템 삭제
+					for col_index, cell in enumerate(user_row, start=1):
+						if item == cell:
+	            			character.update_cell(user_row, col_index, "")
+							break
+					# 받는쪽 아이템 기입
+					user_row = sheet.row_values(take_account)
+					for col_index, cell in enumerate(user_row, start=1):
+       	 				if not cell:  # 빈 셀인 경우
+            				empty_cells = col_index
+							break
+					character.update_cell(user_row, empty_sells, item)
+					result = f"{item}이(가) {take_account}에게 전달되었습니다."
+					mastodon.status_reply(notification['status'], result, visibility='unlisted')
+
+				elif "아이템 조회" in user_text:
+					account = notification['status']['account']["username"]
+					user_row = sheet.row_values(account)
+
+					item = []
+					for col_index, cell in enumerate(user_row, start=4):
+						item.append(cell)
+					mastodon.status_reply(notification['status'], item, visibility='unlisted')
+							
+					
+			
             else:
                 mastodon.status_reply(notification['status'], "키워드 형식이 올바르지 않은 것 같아요.", visibility='unlisted')
                 print("형식이 올바르지 아니함")
