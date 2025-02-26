@@ -49,6 +49,7 @@ sh = gc.open_by_url(os.getenv("GOOGLE_SHEET_URL"))
 search = sh.worksheet("조사")
 attendance = sh.worksheet("출석")
 gatcha_items = sh.worksheet("가챠")
+gatcha_items2 = sh.worksheet("가챠2")
 store = sh.worksheet("상점")
 character = sh.worksheet("캐릭터")
 
@@ -63,10 +64,14 @@ ATTENDANCE_COUNT = 4
 SEARCH_KEYWORD = 1
 SEARCH_DESCRIPTION = 2
 
-# 가챠
+# 가챠 (확률이 존재)
 GATCHA_NORMAL = 1
 GATCHA_RARE = 2
 GATCHA_SUPER_RARE = 3
+
+# 가챠 (확률이 존재하지 않음)
+GATCHA_ITEM_NAME = 1
+GATCHA_ITEM_DESC = 2
 
 # 상점
 STORE_ITEM = 1
@@ -113,11 +118,11 @@ def trueOrFalse():
         return "True"
 
 
-# 가챠
+# 가챠 (확률 있음)
 # @param    n:number - 가챠 횟수
 # @return   list
 # API Request   1회 Google Spreadsheet API 3회
-def gatcha(n):
+def gatchaWithProb(n):
     if n > 10:
         return "한 번에 최대 10번만 연속으로 뽑을 수 있어요!"
 
@@ -144,6 +149,55 @@ def gatcha(n):
         inventory.append(item_list[pick_num])
 
     result = ", ".join(inventory) + "를 획득했어요!"
+    return result
+
+
+# 가챠 (확률 없음), 아이템 설명 없음
+# @param    n:number - 가챠 횟수
+# @return   list
+# API Request   1회 Google Spreadsheet API 3회
+def gatchaWithoutDescription(n):
+    if n > 10:
+        return "한 번에 최대 10번만 연속으로 뽑을 수 있어요!"
+
+    inventory = []
+
+    item_names = gatcha_items2.col_values(GATCHA_ITEM_NAME)
+    
+    for _ in range(n):
+        items = item_names[1:]
+        item_list = list(map(str, items))
+        max_len = len(item_list)
+
+        pick_num = random.randint(0, max_len - 1)
+        inventory.append(item_list[pick_num])
+
+    result = ", ".join(inventory) + "를 획득했어요!"
+    return result
+
+
+# 가챠 (확률 없음), 아이템 설명 있음
+# @return   list
+# API Request   1회 Google Spreadsheet API 3회
+def gatchaWithDescription():
+    if n > 10:
+        return "한 번에 최대 10번만 연속으로 뽑을 수 있어요!"
+
+    item_names = gatcha_items2.col_values(GATCHA_ITEM_NAME)
+    item_descs = gatcha_items2.col_values(GATCHA_ITEM_DESC)
+    
+    items = item_names[1:]
+    descs = item_descs[1:]
+    item_list = list(map(str, items))
+    item_desc_list = list(map(str, descs))
+    max_len = len(item_list)
+
+    pick_num = random.randint(0, max_len - 1)
+    
+    item_list[pick_num]
+    inventory.append(item_list[pick_num])
+
+    result = f"{item_list[pick_num]을(를) 뽑았다!}" + "\n" + f"설명: {item_desc_list[pick_num]}"
     return result
 
 
@@ -279,13 +333,31 @@ class Listener(StreamListener):
                     result = investigate(keyword)
                     mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
-                # 가챠
+
+                # 가챠 (확률 가챠)
                 # 키워드 형식: [가챠/n]
                 elif "가챠" in user_text and '/' in user_text:
                     round_start = user_text.find("/") + 1
                     round = int(user_text[round_start:])
-                    result = gatcha(round)
+                    result = gatchaWithProb(round)
                     mastodon.status_reply(notification['status'], result, visibility='unlisted')
+                
+
+                # 가챠 (단순 가챠, 설명없이 아이템만 주르륵)
+                # 키워드 형식: [가챠/n]
+                elif "가챠" in user_text and '/' in user_text:
+                    round_start = user_text.find("/") + 1
+                    round = int(user_text[round_start:])
+                    result = gatchaWithoutDescription(round)
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
+                
+
+                # 가챠 (단순 가챠, 하나만 뽑되 설명이 있음)
+                # 키워드 형식: [가챠]
+                elif "가챠" in user_text:
+                    result = gatchaWithDescription()
+                    mastodon.status_reply(notification['status'], result, visibility='unlisted')
+
 
                 # 상점
                 # 키워드 형식: [구매/아이템 이름]
@@ -296,6 +368,7 @@ class Listener(StreamListener):
                     result = buySomething(user_account, item)
                     mastodon.status_reply(notification['status'], result, visibility='unlisted')
 
+
                 # 출석
                 # 키워드 형식: [출석]
                 elif "출석" in user_text:
@@ -305,6 +378,7 @@ class Listener(StreamListener):
                         mastodon.status_reply(notification['status'], f"{user_name}님, 어서오세요. 오늘 출석하셨네요!", visibility='unlisted')
                     else:
                         mastodon.status_reply(notification['status'], "존재하지 않는 이름이에요!", visibility='unlisted')
+
 
                 # 다이스
                 # 키워드 형식: [ndm] 혹은 [nDm]
@@ -327,6 +401,7 @@ class Listener(StreamListener):
                 elif "T" in user_text and "F" in user_text and '/' in user_text:
                     result = trueOrFalse()
                     mastodon.status_reply(notification['status'], result, visibility='unlisted')
+
 
                 # 인벤토리
                 # 키워드 형식 [양도/양도대상/아이템]
@@ -360,7 +435,6 @@ class Listener(StreamListener):
 					mastodon.status_reply(notification['status'], item, visibility='unlisted')
 							
 					
-			
             else:
                 mastodon.status_reply(notification['status'], "키워드 형식이 올바르지 않은 것 같아요.", visibility='unlisted')
                 print("형식이 올바르지 아니함")
