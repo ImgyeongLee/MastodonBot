@@ -215,23 +215,49 @@ def gatcha_helper():
 def checkAttendance(account):
     # 계정을 스프레드시트에서 찾음
     finder = attendance.find(account, in_column=ATTENDANCE_ACCOUNT, case_sensitive=True)
-    account_row = finder.row
 
     # 만약 계정이 시트에 있을 경우, 출석을 체크하고 캐릭터의 이름을 반환함
-    if account_row:
+    if finder:
+        account_row = finder.row
         current_datetime = datetime.now().strftime('%Y-%m-%d')
         attendance_count = attendance.cell(account_row, ATTENDANCE_COUNT).value
+
         if attendance_count:
             count = int(attendance_count)
+            previous_datetime = attendance.cell(account_row, ATTENDANCE_DATE).value
+
+            # 첫 출석
+            if not previous_datetime:
+                count = 1
+                attendance.update_cell(account_row, ATTENDANCE_COUNT, count)
+                attendance.update_cell(account_row, ATTENDANCE_DATE, current_datetime)
+                character_name = attendance.cell(account_row, ATTENDANCE_NAME).value
+                return character_name
+
+            date1 = datetime.strptime(previous_datetime, "%Y-%m-%d").date()
+            date2 = datetime.strptime(current_datetime, "%Y-%m-%d").date()
+
+            # 정상 출석
+            if date1 != date2:
+                count += 1
+                attendance.update_cell(account_row, ATTENDANCE_COUNT, count + 1)
+                attendance.update_cell(account_row, ATTENDANCE_DATE, current_datetime)
+                character_name = attendance.cell(account_row, ATTENDANCE_NAME).value
+                return character_name
+            # 이미 출석을 한 상태
+            else:
+                return "OVERWRITE"
+        # 첫 출석 시
         else:
-            count = 0
-        attendance.update_cell(account_row, ATTENDANCE_COUNT, count + 1)
-        attendance.update_cell(account_row, ATTENDANCE_DATE, current_datetime)
-        character_name = attendance.cell(account_row, ATTENDANCE_NAME).value
-        return character_name
-    # 계정이 시트에 존재하지 않을 경우, X를 반환
+            count = 1
+            attendance.update_cell(account_row, ATTENDANCE_COUNT, count)
+            attendance.update_cell(account_row, ATTENDANCE_DATE, current_datetime)
+            character_name = attendance.cell(account_row, ATTENDANCE_NAME).value
+            return character_name
+
+    # 계정이 시트에 존재하지 않을 경우, NONE 반환
     else:
-        return "X"
+        return "NONE"
 
 
 # 키워드로만 이루어지는 조사
@@ -244,9 +270,9 @@ def investigate(keyword):
     if finder:
         keyword_row = finder.row
     else:
-        return "존재하지 않는 키워드입니다."
+        return "존재하지 않는 조사 키워드입니다."
 
-    result = f"[{keyword}]: " + search.cell(keyword_row, SEARCH_DESCRIPTION).value
+    result = f"[{keyword}] " + search.cell(keyword_row, SEARCH_DESCRIPTION).value
 
     return result
 
@@ -295,7 +321,6 @@ def isAffordable(price, money):
 class Listener(StreamListener):
     def on_notification(self, notification):
         if notification['type'] == "mention":
-            print("타입이 멘션입니다.")
             print("내용은 다음과 같습니다 == " + notification['status']['content'])
 
             user_text = filterText(notification['status']['content'])
@@ -359,11 +384,14 @@ class Listener(StreamListener):
                 # 키워드 형식: [출석]
                 elif "출석" in user_text:
                     user_account = notification['status']['account']["username"]
+                    print(user_account)
                     user_name = checkAttendance(user_account)
-                    if user_name != 'X':
-                        mastodon.status_reply(notification['status'], f"{user_name}님, 어서오세요. 오늘 출석하셨네요!", visibility='unlisted')
+                    if user_name == 'NONE':
+                        mastodon.status_reply(notification['status'], "존재하지 않는 분이에요!", visibility='unlisted')
+                    elif user_name == 'OVERWRITE':
+                        mastodon.status_reply(notification['status'], f"오늘 이미 출석하셨어요!", visibility='unlisted')
                     else:
-                        mastodon.status_reply(notification['status'], "존재하지 않는 이름이에요!", visibility='unlisted')
+                        mastodon.status_reply(notification['status'], f"{user_name}님, 출석 확인 되었습니다!", visibility='unlisted')
 
 
                 # 다이스
