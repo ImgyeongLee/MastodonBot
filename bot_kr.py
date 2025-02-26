@@ -205,7 +205,7 @@ def gatchaWithDescription():
 # 대략 5% 확률로 초레어, 15% 확률로 레어, 그 외 일반 (물론, 확률이 정확하지 않음)
 # @return   string
 def gatcha_helper():
-    random_number = random.randint(0, 100)
+    random_number = random.randint(1, 100)
 
     if random_number <= 5:
         return "SUPER_RARE"
