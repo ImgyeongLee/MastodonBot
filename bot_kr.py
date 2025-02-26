@@ -336,7 +336,7 @@ class Listener(StreamListener):
                 user_text = user_text[cmdStart:cmdEnd]
 
 
-                # 가챠
+                # 조사
                 # 키워드 형식: [조사/키워드]
                 if "조사" in user_text and '/' in user_text:
                     keyword_start = user_text.find("/") + 1
